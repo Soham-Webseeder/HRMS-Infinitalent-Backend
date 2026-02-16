@@ -54,6 +54,7 @@ const { createPolicy, getAllPolicies, getPolicyById, updatePolicy, deletePolicy 
 const { getLocationLogs,getGeofenceBreaches,updateEmployeeGeofence} = require("../controllers/company/admin");
 const { getDashboardData, getByEmployeeIdOrName } = require("../controllers/dashboard");
 const { createBusinessUnit, getAllBusinessUnits, getBusinessUnitById, updateBusinessUnitById, deleteBusinessUnitById, getBusinessUnits } = require("../controllers/company/bussinessUnit");
+const upload = require("../middleware/uploadMiddleware");
 
 // Company Routes
 router.post("/logo", logo);
@@ -101,10 +102,10 @@ router.patch("/updateDivision/:id", updateDivisionById);
 router.delete("/deleteDivision/:id", deleteDivision);
 
 // Policy Routes
-router.post("/createPolicy", createPolicy)
+router.post("/createPolicy", upload.single('document'), createPolicy)
 router.get("/getAllPolicies", getAllPolicies)
 router.get("/getPolicyById/:id", getPolicyById)
-router.patch("/updatePolicy/:id", updatePolicy)
+router.patch("/updatePolicy/:id",upload.single('document'), updatePolicy)
 router.delete("/deletePolicy/:id", deletePolicy)
 
 

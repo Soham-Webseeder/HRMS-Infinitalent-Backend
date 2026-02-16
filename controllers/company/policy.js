@@ -1,66 +1,77 @@
 const Policy = require('../../models/company/policy');
-const { uploadDocumentToCloudinary } = require('../../utils/uploadDocument');
 const fs = require("fs");
-
+const path = require("path");
 
 // Create Policy
 exports.createPolicy = async (req, res) => {
   try {
-    let data = req.body;
+    const { title, category } = req.body; // 'category' is passed from the specific UI section
+    const file = req.file;
 
-    // Check for a document in the request
-    const document = req.files && req.files.document;
-
-    // Upload document if provided
-    if (document) {
-      const uploadedDocument = await uploadDocumentToCloudinary(
-        document,
-        process.env.FOLDER_NAME // Use a specific folder in Cloudinary if needed
-      );
-      data.document = uploadedDocument.secure_url; // Store the document's Cloudinary URL in the database
+    if (!file) {
+      return res.status(400).json({ success: false, message: "File is required." });
     }
 
-    // Create the policy document in the database
-    const policy = await Policy.create({ ...data });
-    await policy.save();
+    const policy = await Policy.create({
+      title,
+      category, // Saved so we know WHICH section created it
+      document: file.path.replace(/\\/g, '/')
+    });
 
+    return res.status(201).json({ success: true, data: policy });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update Policy
+exports.updatePolicy = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+    const file = req.file;
+
+    let updateData = { title };
+
+    if (file) {
+      // 1. Optional: Cleanup old file to save server space
+      const oldPolicy = await Policy.findById(id);
+      if (oldPolicy && oldPolicy.document) {
+        const oldPath = path.join(__dirname, '../../', oldPolicy.document);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+
+      // 2. Set new path
+      updateData.document = file.path.replace(/\\/g, '/');
+    }
+
+    const updatedPolicy = await Policy.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!updatedPolicy) {
+      return res.status(404).json({ success: false, message: "Policy not found" });
+    }
 
     return res.status(200).json({
       success: true,
-      data: policy,
-      message: "Policy Created Successfully...",
+      data: updatedPolicy,
+      message: "Policy updated successfully.",
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Update Policy Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // Get all Policies
 exports.getAllPolicies = async (req, res) => {
   try {
-    const policies = await Policy.find();
-    if (!policies || policies.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No policies found.",
-      });
-    }
+    const { category } = req.query; // Supports ?category=HR
+    const filter = category ? { category } : {};
 
-    return res.status(200).json({
-      success: true,
-      data: policies,
-      message: "Policies fetched successfully.",
-    });
+    const policies = await Policy.find(filter);
+    return res.status(200).json({ success: true, data: policies });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -87,57 +98,6 @@ exports.getPolicyById = async (req, res) => {
       success: true,
       data: policy,
       message: "Policy fetched successfully.",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// Update Policy
-exports.updatePolicy = async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "Policy ID is required.",
-      });
-    }
-
-    const document = req.files && req.files.document;
-    const { title, description } = req.body;
-    let updatedPolicy = { title, description };
-
-    const newFileName = `${document.tempFilePath}.pdf`;
-    fs.renameSync(document.tempFilePath, newFileName);
-
-    document.tempFilePath = newFileName;
-    
-    // Upload document if provided
-    if (document) {
-      const uploadedDocument = await uploadDocumentToCloudinary(
-        document,
-        process.env.FOLDER_NAME
-      );
-      updatedPolicy.document = uploadedDocument.secure_url;
-    }
-
-    const updatedData = await Policy.findByIdAndUpdate(id, updatedPolicy, { new: true });
-    if (!updatedData) {
-      return res.status(404).json({
-        success: false,
-        message: "Policy not found.",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: updatedData,
-      message: "Policy updated successfully.",
     });
   } catch (error) {
     console.error(error);

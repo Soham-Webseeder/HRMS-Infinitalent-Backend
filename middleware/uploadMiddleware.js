@@ -18,6 +18,7 @@ const storage = multer.diskStorage({
       panCard: "compliance",
       SSC: "education",
       HSC: "education",
+      document: "policies",
     };
 
     // 2. Identify the subfolder (default to 'documents' for dynamic additions)
