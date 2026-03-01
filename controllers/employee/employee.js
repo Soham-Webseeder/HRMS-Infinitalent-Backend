@@ -25,7 +25,7 @@ const { DateTime } = require('luxon');
 exports.checkUserEmail = async (req, res) => {
   try {
     // Matches the frontend query: ?userEmail=${email}
-    const { userEmail } = req.query; 
+    const { userEmail } = req.query;
 
     if (!userEmail) {
       return res.status(400).json({
@@ -41,7 +41,7 @@ exports.checkUserEmail = async (req, res) => {
       success: true,
       // Matches frontend check: response.data.data?.exist
       data: {
-        exist: !!employee, 
+        exist: !!employee,
       },
     });
   } catch (error) {
@@ -604,8 +604,8 @@ exports.updateProfile = async (req, res) => {
     // 3. Handle Dynamic "Add Document" entries
     let dynamicDocuments = [];
     if (data.documents) {
-      const incomingDocs = typeof data.documents === 'string' 
-        ? JSON.parse(data.documents) 
+      const incomingDocs = typeof data.documents === 'string'
+        ? JSON.parse(data.documents)
         : data.documents;
 
       if (Array.isArray(incomingDocs)) {
@@ -949,7 +949,7 @@ exports.getAllEmployeesByPayroll = async (req, res) => {
     const payrolls = await payroll.find({ salaryType, month, year })
       .populate({
         path: "employeeName",
-        select: "firstName lastName email empId department phone photograph" // Selecting relevant unified fields
+        select: "firstName lastName email empId department businessUnit phone photograph"
       })
       .lean(); // Using lean for faster read performance
 
@@ -1086,7 +1086,7 @@ exports.checkLocationLogsAndSendReminder = async () => {
     }
 
     const currentHour = now.hour;
-    const START_HOUR = 9; 
+    const START_HOUR = 9;
     const END_HOUR = 18;
 
     if (currentHour < START_HOUR || currentHour >= END_HOUR) {
@@ -1106,8 +1106,8 @@ exports.checkLocationLogsAndSendReminder = async () => {
     for (const emp of trackableEmployees) {
       // 2. Query LocationLog using the Employee's MongoDB _id
       const lastLog = await LocationLog.findOne({
-        employee: emp._id, 
-        timestamp: { $gte: thresholdTime } 
+        employee: emp._id,
+        timestamp: { $gte: thresholdTime }
       }).sort({ timestamp: -1 });
 
       // 3. If NO recent log entry is found, send a reminder
@@ -1117,7 +1117,7 @@ exports.checkLocationLogsAndSendReminder = async () => {
 
         // Pass the Employee _id (which is the userId) to the notification service
         await sendPushNotification(
-          emp._id, 
+          emp._id,
           title,
           message,
           'LOCATION_REMINDER',
